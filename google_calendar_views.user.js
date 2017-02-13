@@ -17,6 +17,7 @@
 // Include the view type as part of the view (e.g. day, week, month, etc.)
 // Fix duplicated menu DOM
 // Make view options behave more natively: highlight on hover, show menu trigger on hover
+// Make views list share the height of the sidebar as the two calendar lists do
 // Require confirmation to delete a view
 
 // BUGS:
