@@ -336,6 +336,12 @@ function make_view_option(view) {
         menu: {
             items: [
                 {
+                    text: 'Activate View',
+                    onClick: function() {
+                        ViewHelper.set_view(view);
+                    }
+                },
+                {
                     text: 'Show Calendars',
                     onClick: function() {
                         ViewHelper.show_view_calendars(view);
