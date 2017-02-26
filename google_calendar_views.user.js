@@ -35,10 +35,17 @@ var run = function() {
 
 CalendarHelper = {
     get_visible_calendars: function() {
-        return $.makeArray($('.calListChip .calListLabel-sel').map(function() {
-            $c = $(this).parents('.calListChip');
-            return {id: $c.attr('id'), title: $c.attr('title')};
-        }));
+        var results = [];
+        var calendars = $('.calListChip .calListLabel-sel');
+        var count = calendars.length;
+        for (var i = 0; i < count; i++) {
+            var $calendar = $(calendars[i]);
+            $calendar = $calendar.parents('.calListChip');
+            var id = $calendar.attr('id');
+            var title = $calendar.attr('title');
+            results.push({id: id, title: title});
+        }
+        return results;
     },
 
     hide_all_calendars: function() {
@@ -49,7 +56,7 @@ CalendarHelper = {
     set_visibility_for_calendars: function(calendars, should_be_visible) {
         var num_calendars = calendars.length;
         for(var i=0; i<num_calendars; i++) {
-            var calendar_id = calendars[i].id || canedars[i];
+            var calendar_id = calendars[i].id || calendars[i];
             var $calendar = $('#' + calendar_id);
             var isSelected = $calendar.find('.calListLabel-sel').length > 0;
             if (isSelected != should_be_visible) {
@@ -205,6 +212,10 @@ ViewHelper = {
         CalendarHelper.hide_all_calendars();
         CalendarHelper.set_visibility_for_calendars(view.calendars, true);
 
+        ViewHelper.mark_view_used(view);
+    },
+
+    mark_view_used: function(view) {
         // Update view metadata
         var views = getValue('views', {});
         views[view.name].count++;
