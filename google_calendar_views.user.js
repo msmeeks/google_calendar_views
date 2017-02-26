@@ -19,10 +19,6 @@
  - Make views list share height like the calendar lists (no scrolling of the side bar when all are expanded)
 */
 
-/* BUGS:
- - Sometimes some of the calendars aren't displayed after setting the view. This primarily seems to happen for my primary calendar
-*/
-
 var run = function() {
     add_styles();
 
@@ -33,7 +29,15 @@ var run = function() {
 };
 
 CalendarHelper = {
-    get_visible_calendars: function() {
+    get_visible_calendars: function(calendars_to_ignore) {
+        calendars_to_ignore = calendars_to_ignore || [];
+        var ids_to_ignore = {};
+        var num_calendars_to_ignore = calendars_to_ignore.length;
+        for (var c = 0; c < num_calendars_to_ignore; c++) {
+            var calendar_id = calendars_to_ignore[c].id || c;
+            ids_to_ignore[calendar_id] = true;
+        }
+
         var results = [];
         var calendars = $('.calListChip .calListLabel-sel');
         var count = calendars.length;
@@ -41,14 +45,18 @@ CalendarHelper = {
             var $calendar = $(calendars[i]);
             $calendar = $calendar.parents('.calListChip');
             var id = $calendar.attr('id');
-            var title = $calendar.attr('title');
-            results.push({id: id, title: title});
+            // If the calendar is not in the list of calendars to ignore, add it to the results
+            if (!ids_to_ignore[id]) {
+                var title = $calendar.attr('title');
+                results.push({id: id, title: title});
+            }
         }
         return results;
     },
 
-    hide_all_calendars: function() {
-        var calendars = CalendarHelper.get_visible_calendars();
+    hide_all_calendars: function(calendars_to_ignore) {
+        calendars_to_ignore = calendars_to_ignore || [];
+        var calendars = CalendarHelper.get_visible_calendars(calendars_to_ignore);
         CalendarHelper.set_visibility_for_calendars(calendars, false);
     },
 
@@ -208,13 +216,17 @@ ViewHelper = {
     },
 
     set_view: function(view) {
-        CalendarHelper.hide_all_calendars();
+        CalendarHelper.hide_all_calendars(view.calendars);
         ViewHelper.show_view_calendars(view);
     },
 
     show_view_calendars: function(view) {
         CalendarHelper.set_visibility_for_calendars(view.calendars, true);
         ViewHelper.mark_view_used(view);
+    },
+
+    hide_view_calendars: function(view) {
+        CalendarHelper.set_visibility_for_calendars(view.calendars, false);
     },
 
     mark_view_used: function(view) {
@@ -325,9 +337,15 @@ function make_view_option(view) {
         menu: {
             items: [
                 {
-                    text: 'Show View Calendars',
+                    text: 'Show Calendars',
                     onClick: function() {
                         ViewHelper.show_view_calendars(view);
+                    }
+                },
+                {
+                    text: 'Hide Calendars',
+                    onClick: function() {
+                        ViewHelper.hide_view_calendars(view);
                     }
                 },
                 {
