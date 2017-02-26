@@ -9,155 +9,175 @@
 // @grant        none
 // ==/UserScript==
 
-// TODO:
-// Use expanded/collapsed state of views from last visit on reload
-// Add ability to show calendars from a view without clearing the calendars that are already displayed
-// Add ability to hide calendars from a view
-// Indicate whether or not a view is active
-// Include the view type as part of the view (e.g. day, week, month, etc.)
-// Fix duplicated menu DOM
-// Make view options behave more natively: highlight on hover, show menu trigger on hover
-// Make views list share the height of the sidebar as the two calendar lists do
-// Require confirmation to delete a view
+/* TODO:
+ - Add ability to show calendars from a view without clearing the calendars that are already displayed
+ - Add ability to hide calendars from a view
+ - Use expanded/collapsed state of views from last visit on reload
+ - Indicate whether or not a view is active
+ - Include the view type as part of the view (e.g. day, week, month, etc.)
+ - Fix duplicated menu DOM
+ - Require confirmation to delete a view
+ - Make views list share height like the calendar lists (no scrolling of the side bar when all are expanded)
+*/
 
-// BUGS:
-// Sometimes some of the calendars aren't displayed after setting the view. This primarily seems to happen for my primary calendar
+/* BUGS:
+ - Sometimes some of the calendars aren't displayed after setting the view. This primarily seems to happen for my primary calendar
+*/
+
+var run = function() {
+    add_styles();
+
+    var $views_panel = make_views_panel();
+    $('#clst_my').before($views_panel);
+
+    load_views();
+};
 
 CalendarHelper = {
-	get_visible_calendars: function() {
-		return $.makeArray($('.calListChip .calListLabel-sel').map(function() {
-			$c = $(this).parents('.calListChip');
+    get_visible_calendars: function() {
+        return $.makeArray($('.calListChip .calListLabel-sel').map(function() {
+            $c = $(this).parents('.calListChip');
             return {id: $c.attr('id'), title: $c.attr('title')};
-		}));
-	},
+        }));
+    },
 
-	hide_all_calendars: function() {
-		var calendars = CalendarHelper.get_visible_calendars();
-		CalendarHelper.set_visibility_for_calendars(calendars, false);
-	},
+    hide_all_calendars: function() {
+        var calendars = CalendarHelper.get_visible_calendars();
+        CalendarHelper.set_visibility_for_calendars(calendars, false);
+    },
 
-	set_visibility_for_calendars: function(calendars, should_be_visible) {
-		var num_calendars = calendars.length;
-		for(var i=0; i<num_calendars; i++) {
-			var calendar_id = calendars[i].id || canedars[i];
-			var $calendar = $('#' + calendar_id);
-			var isSelected = $calendar.find('.calListLabel-sel').length > 0;
-			if (isSelected != should_be_visible) {
-				$calendar.click();
-			}
-		}
-	}
+    set_visibility_for_calendars: function(calendars, should_be_visible) {
+        var num_calendars = calendars.length;
+        for(var i=0; i<num_calendars; i++) {
+            var calendar_id = calendars[i].id || canedars[i];
+            var $calendar = $('#' + calendar_id);
+            var isSelected = $calendar.find('.calListLabel-sel').length > 0;
+            if (isSelected != should_be_visible) {
+                $calendar.click();
+            }
+        }
+    }
 };
 
 MenuHelper = {
 
-	make_menu_trigger: function(cfg) {
-		var defaults = {
-			menu: {
-				items:[ {
-					text:'',
-					onClick: null
-				} ]
-			}
-		};
-		cfg = $.extend({}, defaults, cfg);
+    make_menu_trigger: function(cfg) {
+        var defaults = {
+            menu: {
+                items:[ {
+                    text:'',
+                    onClick: null
+                } ]
+            },
+            onClick: null
+        };
+        cfg = $.extend({}, defaults, cfg);
 
 
-		$trigger = $('<span class="clstMenu to-disable to-disable-tabindex" tabindex="0" role="menu" deluminate_imagetype="png">More options...</span>')
-		.hover(function() {
-			$(this).toggleClass('clstMenu-hover');
-		});
+        $trigger = $('<span class="clstMenu to-disable to-disable-tabindex" tabindex="0" role="menu" deluminate_imagetype="png">More options...</span>')
+        .hover(function() {
+            $(this).toggleClass('clstMenu-hover');
+        });
 
-		cfg.menu.triggerTarget = $trigger;
-		// FIXME: this adds a lot of junk to the DOM that stays around and gets repeated when views are created or deleted.
-		$('body').append(MenuHelper.make_menu(cfg.menu));
+        if (cfg.onClick) {
+            $trigger.on('click', cfg.onClick);
+        }
 
-		return $trigger;
-	},
+        cfg.menu.triggerTarget = $trigger;
+        // FIXME: this adds a lot of junk to the DOM that stays around and gets repeated when views are created or deleted.
+        $('body').append(MenuHelper.make_menu(cfg.menu));
 
-	make_menu_item: function(cfg) {
-		var defaults = {
-			text: '',
-			onClick: null
-		};
-		cfg = $.extend({}, defaults, cfg);
+        return $trigger;
+    },
 
-		$item = $(
-			'<div class="goog-menuitem" role="menuitem" style="user-select: none;">' +
-				'<div class="goog-menuitem-content" style="user-select: none;">' +
-					cfg.text +
-				'</div>' +
-			'</div>'
-		).on('hover', function() {
-			$(this).toggleClass('goog-menuitem-hover');
-		});
+    make_menu_item: function(cfg) {
+        var defaults = {
+            text: '',
+            onClick: null
+        };
+        cfg = $.extend({}, defaults, cfg);
 
-		if (typeof cfg.onClick === 'function') {
-			$item.on('click', function(e) {
-				cfg.onClick(e);
-			});
-		}
-		return $item;
-	},
+        $item = $(
+            '<div class="goog-menuitem" role="menuitem" style="user-select: none;">' +
+                '<div class="goog-menuitem-content" style="user-select: none;">' +
+                    cfg.text +
+                '</div>' +
+            '</div>'
+        ).hover(function() {
+            $(this).toggleClass('goog-menuitem-hover');
+        });
 
-	make_menu: function(cfg) {
-		var defaults = {
-			triggerTarget: null,
-			items:[ {
-				text:'',
-				onClick: null
-			} ]
-		};
-		cfg = $.extend({}, defaults, cfg);
+        if (typeof cfg.onClick === 'function') {
+            $item.on('click', function(e) {
+                cfg.onClick(e);
+            });
+        }
+        return $item;
+    },
 
-		var $items = $.map(cfg.items, function(item_cfg) {
-			return MenuHelper.make_menu_item(item_cfg);
-		});
+    make_menu: function(cfg) {
+        var defaults = {
+            triggerTarget: null,
+            items:[ {
+                text:'',
+                onClick: null
+            } ]
+        };
+        cfg = $.extend({}, defaults, cfg);
 
-		var $menu = $('<div class="goog-menu goog-menu-vertical" role="menu" aria-haspopup="true" tabindex="0" style="user-select: none;">')
-			.append($items);
+        var $items = $.map(cfg.items, function(item_cfg) {
+            return MenuHelper.make_menu_item(item_cfg);
+        });
 
-		if (cfg.triggerTarget) {
-			var $target = $(cfg.triggerTarget);
+        var $menu = $('<div class="goog-menu goog-menu-vertical" role="menu" aria-haspopup="true" tabindex="0" style="user-select: none;">')
+            .append($items);
 
-			var hide_menu = function() {
-				$menu.hide();
-				$target.removeClass('clstMenu-open');
-			};
+        if (cfg.triggerTarget) {
+            var $target = $(cfg.triggerTarget);
 
-			// hide menu when user clicks on an item
-			var num_items = $items.length;
-			for(var i=0; i<num_items; i++) {
-				$items[0].on('click', hide_menu);
-			}
+            var hide_menu = function() {
+                $menu.hide();
+                $target.removeClass('clstMenu-open');
+                $target.parent().removeClass('menu-open');
+            };
 
-			// hide menu when user clicks off the trigger
-			$(document).on('click', hide_menu);
+            // hide menu when user clicks on an item
+            var num_items = $items.length;
+            for(var i=0; i<num_items; i++) {
+                $items[0].on('click', hide_menu);
+            }
 
-			$target.on('click', function(e) {
-				e.preventDefault();
-				e.stopPropagation();
+            // hide menu when user clicks off the trigger
+            $(document).on('click', hide_menu);
 
-				if ($target.hasClass('clstMenu-open')) {
-					// hide menu when user clicks the trigger and the menu is already visible
-					hide_menu();
-				} else {
-					var target_position = $target.offset();
-					var x = target_position.left;
-					var y = target_position.top + $target.height();
-					$menu.css({top: y, left: x}).show();
-					$target.addClass('clstMenu-open');
-				}
-			});
-		}
+            $target.on('click', function(e) {
+                // Hide other menus
+                // TODO: see if there is a less hacky way to do this.
+                $(document).click();
 
-		return $menu;
-	}
+                e.stopPropagation();
+
+                if ($target.hasClass('clstMenu-open')) {
+                    // hide menu when user clicks the trigger and the menu is already visible
+                    hide_menu();
+                } else {
+                    var target_position = $target.offset();
+                    var x = target_position.left;
+                    var y = target_position.top + $target.height();
+                    $menu.css({top: y, left: x}).show();
+                    $target.addClass('clstMenu-open');
+                    $target.parent().addClass('menu-open');
+                }
+            });
+        }
+
+        return $menu;
+    }
 };
 
 ViewHelper = {
-	
-	create_or_update_view: function(name, calendars) {
+    
+    create_or_update_view: function(name, calendars) {
         calendars = calendars || CalendarHelper.get_visible_calendars();
 
         var views = getValue('views', {});
@@ -175,22 +195,22 @@ ViewHelper = {
         setValue('views', views);
     },
 
-	delete_view: function(name) {
+    delete_view: function(name) {
         var views = getValue('views', {});
-		views[name] = undefined;
+        views[name] = undefined;
         setValue('views', views);
-	},
+    },
 
-	set_view: function(view) {
-		CalendarHelper.hide_all_calendars();
-		CalendarHelper.set_visibility_for_calendars(view.calendars, true);
+    set_view: function(view) {
+        CalendarHelper.hide_all_calendars();
+        CalendarHelper.set_visibility_for_calendars(view.calendars, true);
 
-		// Update view metadata
-		var views = getValue('views', {});
-		views[view.name].count++;
-		views[view.name].lastUsed = new Date();
-		setValue('views', views);
-	}
+        // Update view metadata
+        var views = getValue('views', {});
+        views[view.name].count++;
+        views[view.name].lastUsed = new Date();
+        setValue('views', views);
+    }
 };
 
 function make_create_view_form() {
@@ -208,7 +228,7 @@ function make_create_view_form() {
     $save_btn.on('click', function() {
         var name = $name.val();
 
-		ViewHelper.create_or_update_view(name);
+        ViewHelper.create_or_update_view(name);
 
         load_views();
 
@@ -230,78 +250,87 @@ function show_create_view_form() {
 function make_views_panel() {
     var $new_view_form = make_create_view_form();
 
-	var $menu_trigger = MenuHelper.make_menu_trigger({
-		menu: {
-			items: [{
-				text: 'Create View',
-				onClick: show_create_view_form
-			}]
-		}
-	});
+    var $menu_trigger = MenuHelper.make_menu_trigger({
+        isVisible: true,
+        menu: {
+            items: [{
+                text: 'Create View',
+                onClick: show_create_view_form
+            }]
+        }
+    });
 
-	var $views_header = $('<h2 class="calHeader goog-zippy-header goog-zippy-expanded" tabindex="0" role="tab" aria-expanded="true"><span class="h zippy-arrow" unselectable="on" deluminate_imagetype="png">&nbsp;</span><span class="calHeaderSpace">My Views</span></h2>')
-		.append($menu_trigger)
-		.on('click', function() {
-			$(this).toggleClass('goog-zippy-collapsed goog-zippy-expanded');
-			$views_list.toggle();
-		});
+    var $views_header = $(
+        '<h2 class="calHeader goog-zippy-header goog-zippy-expanded" tabindex="0" role="tab" aria-expanded="true">' +
+            '<span class="h zippy-arrow" unselectable="on" deluminate_imagetype="png">&nbsp;</span>' +
+            '<span class="calHeaderSpace">My Views</span>' +
+        '</h2>'
+    ).append($menu_trigger)
+    .on('click', function() {
+        $(this).toggleClass('goog-zippy-collapsed goog-zippy-expanded');
+        $views_list.toggle();
+    });
 
-	var $views_list = $('<div id="__view_list__" style="display:hidden;">');
+    var $views_list = $('<div id="__view_list__" style="display:hidden;">');
 
-	var $views_panel = $('<div>').append($views_header).append($new_view_form).append($views_list);
-	return $views_panel;
+    var $views_panel = $('<div>').append($views_header).append($new_view_form).append($views_list);
+    return $views_panel;
 }
 
 function make_button(button_text) {
     return $("<div>", {'class':'goog-imageless-button', 'role':'button'})
         .text(button_text)
-        .hover(
-			function() {
-				$(this).addClass('goog-imageless-button-hover');
-			}, function() {
-				$(this).removeClass('goog-imageless-button-hover');
-			}
-		);
+        .hover(function() {
+            $(this).toggleClass('goog-imageless-button-hover');
+        });
 }
 
 function make_view_option(view) {
-	var $menu_trigger = MenuHelper.make_menu_trigger({
-		menu: {
-			items: [
-				{
-					text: 'Update View',
-					onClick: function() {
-						ViewHelper.create_or_update_view(view.name);
-					}
-				},
-				{
-					text: 'Delete View',
-					onClick: function() {
-						ViewHelper.delete_view(view.name);
-						load_views();
-					}
-				}
-			]
-		}
-	});
+    $option = $(
+        '<div class="calListRow" role="option" tabindex="0">' +
+            '<div class="calListChip" title="' + view.name + '">' +
+                '<div style="cursor:pointer;" class="calListLabelOuter">' +
+                    '<div class="calListLabel">' +
+                        '<div class="calListSquare goog-inline-block" style="background:#9FC6E7;border-color:#9FC6E7"> </div>' +
+                        '<span style="">' +
+                            truncate(view.name, 20) +
+                        '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="calListImg calListImg" id="popup-bW1lZWtzQHNhbGVzZm9yY2UuY29t" tabindex="-1"> </div>' +
+        '</div>'
+    ).on('click', function() {
+        ViewHelper.set_view(view);
+    }).hover(function() {
+        var $this = $(this);
+        $this.find('.calListLabelOuter').toggleClass('calListLabelOuter-hvr');
+        $this.toggleClass('calListRow-hover');
+    });
 
-	return $(
-		'<div class="calListRow" role="option" tabindex="0">' +
-			'<div class="calListChip" title="' + view.name + '">' +
-				'<div style="cursor:pointer;" class="calListLabelOuter">' +
-					'<div class="calListLabel">' +
-						'<div class="calListSquare goog-inline-block" style="background:#9FC6E7;border-color:#9FC6E7"> </div>' +
-						'<span style="">' +
-							truncate(view.name, 20) +
-						'</span>' +
-					'</div>' +
-				'</div>' +
-			'</div>' +
-			'<div class="calListImg calListImg" id="popup-bW1lZWtzQHNhbGVzZm9yY2UuY29t" tabindex="-1"> </div>' +
-		'</div>'
-	).on('click', function() {
-		ViewHelper.set_view(view);
-    }).append($menu_trigger);
+    var $menu_trigger = MenuHelper.make_menu_trigger({
+        menu: {
+            items: [
+                {
+                    text: 'Update View',
+                    onClick: function() {
+                        ViewHelper.create_or_update_view(view.name);
+                    }
+                },
+                {
+                    text: 'Delete View',
+                    onClick: function() {
+                        ViewHelper.delete_view(view.name);
+                        load_views();
+                    }
+                }
+            ]
+        }
+    });
+
+    $option.append($menu_trigger);
+
+    return $option;
 }
 
 function load_views() {
@@ -319,11 +348,12 @@ function load_views() {
     }
 }
 
-var run = function() {
-	var $views_panel = make_views_panel();
-    $('#clst_my').before($views_panel);
-
-    load_views();
+var add_styles = function() {
+    // Add new CSS rules
+    GM_addStyle('.calListRow .clstMenu { display: none; margin-top: -2px; }');
+    GM_addStyle('.calListRow.calListRow-hover .clstMenu { display: inline-block; }');
+    GM_addStyle('.calListRow .clstMenu.clstMenu-open { display: inline-block; }');
+    GM_addStyle('.calListRow.menu-open .calListLabelOuter { background-color: #eee; }');
 };
 
 // String Helpers
@@ -345,7 +375,8 @@ var truncate = function(str, length, pruneStr) { //from underscore.string, autho
 };
 
 // Storage helpers
-var account_email = $('.gb_wb').text();
+var account_email = $('[aria-label="Account Information"] > div > div > div:contains("@")').text();
+
 const __STORAGE_PREFIX = [
     '', GM_info.script.namespace, GM_info.script.name, account_email, ''].join('___');
 
@@ -521,6 +552,3 @@ var SuperLocalStorage = new function () {
 
     run();
 })();
-
-
-
