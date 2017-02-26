@@ -10,7 +10,6 @@
 // ==/UserScript==
 
 /* TODO:
- - Use expanded/collapsed state of views from last visit on reload
  - Indicate whether or not a view is active
  - Include the view type as part of the view (e.g. day, week, month, etc.)
  - Fix duplicated menu DOM
