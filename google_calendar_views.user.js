@@ -10,7 +10,6 @@
 // ==/UserScript==
 
 /* TODO:
- - Add ability to show calendars from a view without clearing the calendars that are already displayed
  - Add ability to hide calendars from a view
  - Use expanded/collapsed state of views from last visit on reload
  - Indicate whether or not a view is active
@@ -210,8 +209,11 @@ ViewHelper = {
 
     set_view: function(view) {
         CalendarHelper.hide_all_calendars();
-        CalendarHelper.set_visibility_for_calendars(view.calendars, true);
+        ViewHelper.show_view_calendars(view);
+    },
 
+    show_view_calendars: function(view) {
+        CalendarHelper.set_visibility_for_calendars(view.calendars, true);
         ViewHelper.mark_view_used(view);
     },
 
@@ -322,6 +324,12 @@ function make_view_option(view) {
     var $menu_trigger = MenuHelper.make_menu_trigger({
         menu: {
             items: [
+                {
+                    text: 'Show View Calendars',
+                    onClick: function() {
+                        ViewHelper.show_view_calendars(view);
+                    }
+                },
                 {
                     text: 'Update View',
                     onClick: function() {
