@@ -284,8 +284,16 @@ function make_views_panel() {
         }
     });
 
+    var view_list_is_visible = getValue('view_list_is_visible', false);
+    var expander_class = 'goog-zippy-collapsed';
+    var list_display_style = 'none';
+    if (view_list_is_visible) {
+        expander_class = 'goog-zippy-expanded';
+        list_display_style = '';
+    }
+
     var $views_header = $(
-        '<h2 class="calHeader goog-zippy-header goog-zippy-expanded" tabindex="0" role="tab" aria-expanded="true">' +
+        '<h2 class="calHeader goog-zippy-header ' + expander_class + '" tabindex="0" role="tab" aria-expanded="true">' +
             '<span class="h zippy-arrow" unselectable="on" deluminate_imagetype="png">&nbsp;</span>' +
             '<span class="calHeaderSpace">My Views</span>' +
         '</h2>'
@@ -293,9 +301,10 @@ function make_views_panel() {
     .on('click', function() {
         $(this).toggleClass('goog-zippy-collapsed goog-zippy-expanded');
         $views_list.toggle();
+        setValue('view_list_is_visible', !getValue('view_list_is_visible', false));
     });
 
-    var $views_list = $('<div id="__view_list__" style="display:hidden;">');
+    var $views_list = $('<div id="__view_list__">').css('display', list_display_style);
 
     var $views_panel = $('<div>').append($views_header).append($new_view_form).append($views_list);
     return $views_panel;
