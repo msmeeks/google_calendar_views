@@ -192,7 +192,7 @@ ViewHelper = {
     create_or_update_view: function(name, calendars) {
         calendars = calendars || CalendarHelper.get_visible_calendars();
 
-        var views = getValue('views', {});
+        var views = ViewHelper.get_views();
         var now = new Date();
 
         views[name] = {
@@ -204,34 +204,49 @@ ViewHelper = {
             modified: now
         };
 
+        ViewHelper.set_views(views);
+    },
+
+    get_views: function() {
+        return getValue('views', {});
+    },
+
+    set_views: function(views) {
         setValue('views', views);
+    },
+
+    get_view: function(name) {
+        return ViewHelper.get_views()[name];
     },
 
     delete_view: function(name) {
-        var views = getValue('views', {});
+        var views = ViewHelper.get_views();
         views[name] = undefined;
-        setValue('views', views);
+        ViewHelper.set_views(views);
     },
 
-    set_view: function(view) {
+    activate_view: function(name) {
+        var view = ViewHelper.get_view(name);
         CalendarHelper.hide_all_calendars(view.calendars);
-        ViewHelper.show_view_calendars(view);
+        ViewHelper.show_view_calendars(view.name);
     },
 
-    show_view_calendars: function(view) {
+    show_view_calendars: function(name) {
+        var view = ViewHelper.get_view(name);
         CalendarHelper.set_visibility_for_calendars(view.calendars, true);
-        ViewHelper.mark_view_used(view);
+        ViewHelper.mark_view_used(view.name);
     },
 
-    hide_view_calendars: function(view) {
+    hide_view_calendars: function(name) {
+        var view = ViewHelper.get_view(name);
         CalendarHelper.set_visibility_for_calendars(view.calendars, false);
     },
 
-    mark_view_used: function(view) {
+    mark_view_used: function(name) {
         // Update view metadata
         var views = getValue('views', {});
-        views[view.name].count++;
-        views[view.name].lastUsed = new Date();
+        views[name].count++;
+        views[name].lastUsed = new Date();
         setValue('views', views);
     }
 };
@@ -333,7 +348,7 @@ function make_view_option(view) {
             '<div class="calListImg calListImg" id="popup-bW1lZWtzQHNhbGVzZm9yY2UuY29t" tabindex="-1"> </div>' +
         '</div>'
     ).on('click', function() {
-        ViewHelper.set_view(view);
+        ViewHelper.activate_view(view.name);
     }).hover(function() {
         var $this = $(this);
         $this.find('.calListLabelOuter').toggleClass('calListLabelOuter-hvr');
@@ -346,19 +361,19 @@ function make_view_option(view) {
                 {
                     text: 'Activate View',
                     onClick: function() {
-                        ViewHelper.set_view(view);
+                        ViewHelper.activate_view(view.name);
                     }
                 },
                 {
                     text: 'Show Calendars',
                     onClick: function() {
-                        ViewHelper.show_view_calendars(view);
+                        ViewHelper.show_view_calendars(view.name);
                     }
                 },
                 {
                     text: 'Hide Calendars',
                     onClick: function() {
-                        ViewHelper.hide_view_calendars(view);
+                        ViewHelper.hide_view_calendars(view.name);
                     }
                 },
                 {
