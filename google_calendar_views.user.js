@@ -431,21 +431,13 @@ var getValue = function(key, defaultValue) {
 
 /***************************************************************************************
 ****************************************************************************************
-*****   Super GM_setValue and GM_getValue.js
+*****   Super LocalStorage
 *****
-*****   This library extends the Greasemonkey GM_setValue and GM_getValue functions to
-*****   handle any javascript variable type.
-*****
-*****   Add it to your GM script with:
-*****       // @require http://userscripts.org/scripts/source/107941.user.js
-*****
+*****   This library extends the  localStorage to handle any javascript variable type.
 *****
 *****   Usage:
-*****       GM_SuperValue.set           (varName, varValue);
-*****       var x = GM_SuperValue.get   (varName, defaultValue);
-*****
-*****   Test mode:
-*****       GM_SuperValue.runTestCases  (bUseConsole);
+*****       SuperLocalStorage.set(varName, varValue);
+*****       var x = SuperLocalStorage.get(varName, defaultValue);
 *****
 */
 
@@ -462,54 +454,32 @@ var SuperLocalStorage = new function () {
     }
 
     /*--- set ()
-        GM_setValue (http://wiki.greasespot.net/GM_setValue) only stores:
-        strings, booleans, and integers (a limitation of using Firefox
-        preferences for storage).
-        This function extends that to allow storing any data type.
+        Stores a value or function
         Parameters:
             varName
                 String: The unique (within this script) name for this value.
                 Should be restricted to valid Javascript identifier characters.
             varValue
                 Any valid javascript value.  Just note that it is not advisable to
-                store too much data in the Firefox preferences.
+                store too much data in localStorage.
         Returns:
             undefined
     */
     this.set = function (varName, varValue) {
         if ( ! varName) {
-            ReportError ('Illegal varName sent to GM_SuperValue.set().');
+            ReportError ('Illegal varName sent to SuperLocalStorage.set().');
             return;
-        }
-        if (/[^\w _-]/.test (varName) ) {
-            ReportError ('Suspect, probably illegal, varName sent to GM_SuperValue.set().');
         }
 
         switch (typeof varValue) {
             case 'undefined':
-                ReportError ('Illegal varValue sent to GM_SuperValue.set().');
+                ReportError ('Illegal varValue sent to SuperLocalStorage.set().');
                 break;
             case 'boolean':
             case 'string':
-                //--- These 2 types are safe to store, as is.
-                localStorage.setItem(varName, varValue);
-                break;
             case 'number':
-                /*--- Numbers are ONLY safe if they are integers.
-                    Note that hex numbers, EG 0xA9, get converted
-                    and stored as decimals, EG 169, automatically.
-                    That's a feature of JavaScript.
-                    Also, only a 32-bit, signed integer is allowed.
-                    So we only process +/-2147483647 here.
-                */
-                if (varValue === parseInt (varValue)  &&  Math.abs (varValue) < 2147483647)
-                {
-                    localStorage.setItem(varName, varValue);
-                    break;
-                }
             case 'object':
-                /*--- For all other cases (but functions), and for
-                    unsafe numbers, store the value as a JSON string.
+                /*--- For all valid cases (but functions), and for store the value as a JSON string.
                 */
                 var safeStr = JSON_MarkerStr + JSON.stringify (varValue);
                 localStorage.setItem(varName, safeStr);
@@ -522,21 +492,18 @@ var SuperLocalStorage = new function () {
                 break;
 
             default:
-                ReportError ('Unknown type in GM_SuperValue.set()!');
+                ReportError ('Unknown type in SuperLocalStorage.set()!');
                 break;
         }
     };//-- End of set()
 
 
     /*--- get ()
-        GM_getValue (http://wiki.greasespot.net/GM_getValue) only retieves:
-        strings, booleans, and integers (a limitation of using Firefox
-        preferences for storage).
         This function extends that to allow retrieving any data type -- as
-        long as it was stored with GM_SuperValue.set().
+        long as it was stored with SuperLocalStorage.set().
         Parameters:
             varName
-                String: The property name to get. See GM_SuperValue.set for details.
+                String: The property name to get. See SuperLocalStorage.set for details.
             defaultValue
                 Optional. Any value to be returned, when no value has previously
                 been set.
@@ -551,11 +518,11 @@ var SuperLocalStorage = new function () {
     this.get = function (varName, defaultValue) {
 
         if ( ! varName) {
-            ReportError ('Illegal varName sent to GM_SuperValue.get().');
+            ReportError ('Illegal varName sent to SuperLocalStorage.get().');
             return;
         }
         if (/[^\w _-]/.test (varName) ) {
-            ReportError ('Suspect, probably illegal, varName sent to GM_SuperValue.get().');
+            ReportError ('Suspect, probably illegal, varName sent to SuperLocalStorage.get().');
         }
 
         //--- Attempt to get the value from storage.
@@ -586,7 +553,7 @@ var SuperLocalStorage = new function () {
     };//-- End of get()
 };
 
-//--- EOF for GM shim
+//--- EOF for SuperLocalStorage
 
 
 (function() {
