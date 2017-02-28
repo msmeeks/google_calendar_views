@@ -10,9 +10,8 @@
 // ==/UserScript==
 
 /* TODO:
- - Indicate whether or not a view is active
+ - Indicate whether or not a view is active - all calendars show and not others, all calendars show, some calendars show, no calendars shown?
  - Include the view type as part of the view (e.g. day, week, month, etc.)
- - Fix duplicated menu DOM
  - Require confirmation to delete a view
  - Make views list share height like the calendar lists (no scrolling of the side bar when all are expanded)
 */
@@ -95,9 +94,12 @@ MenuHelper = {
             $trigger.on('click', cfg.onClick);
         }
 
-        cfg.menu.triggerTarget = $trigger;
-        // FIXME: this adds a lot of junk to the DOM that stays around and gets repeated when views are created or deleted.
-        $('body').append(MenuHelper.make_menu(cfg.menu));
+        $trigger.on('click', function(e) {
+            $menu = MenuHelper.make_menu(cfg.menu);
+            $('body').append($menu);
+            MenuHelper.open_menu_on_target($menu, $(this));
+            e.stopPropagation();
+        });
 
         return $trigger;
     },
@@ -128,12 +130,11 @@ MenuHelper = {
     },
 
     make_menu_seperator: function() {
-        return $('<div class="views-menu-separator">');
+        return $('<div class="menu-separator">');
     },
 
     make_menu: function(cfg) {
         var defaults = {
-            triggerTarget: null,
             items:[ {
                 text:'',
                 onClick: null
@@ -152,46 +153,44 @@ MenuHelper = {
         var $menu = $('<div class="goog-menu goog-menu-vertical" role="menu" aria-haspopup="true" tabindex="0" style="user-select: none;">')
             .append($items);
 
-        if (cfg.triggerTarget) {
-            var $target = $(cfg.triggerTarget);
+        return $menu;
+    },
 
-            var hide_menu = function() {
-                $menu.hide();
-                $target.removeClass('clstMenu-open');
-                $target.parent().removeClass('menu-open');
-            };
+    open_menu_on_target: function(menu, trigger) {
+        var $menu = $(menu);
+        var $target = $(trigger);
 
-            // hide menu when user clicks on an item
-            var num_items = $items.length;
-            for(var i=0; i<num_items; i++) {
-                $items[0].on('click', hide_menu);
-            }
+        var close_menu = function() {
+            $menu.remove();
+            $target.removeClass('clstMenu-open');
+            $target.parent().removeClass('menu-open');
+        };
 
-            // hide menu when user clicks off the trigger
-            $(document).on('click', hide_menu);
-
-            $target.on('click', function(e) {
-                // Hide other menus
-                // TODO: see if there is a less hacky way to do this.
-                $(document).click();
-
-                e.stopPropagation();
-
-                if ($target.hasClass('clstMenu-open')) {
-                    // hide menu when user clicks the trigger and the menu is already visible
-                    hide_menu();
-                } else {
-                    var target_position = $target.offset();
-                    var x = target_position.left;
-                    var y = target_position.top + $target.height();
-                    $menu.css({top: y, left: x}).show();
-                    $target.addClass('clstMenu-open');
-                    $target.parent().addClass('menu-open');
-                }
-            });
+        // Close menu when user clicks on an item
+        var items = $menu.find('.goog-menuitem');
+        var num_items = items.length;
+        for(var i=0; i<num_items; i++) {
+            $(items[0]).on('click', close_menu);
         }
 
-        return $menu;
+        // Close other menus
+        // TODO: see if there is a less hacky way to do this.
+        $(document).click();
+
+        // Close menu when user clicks off the trigger
+        $(document).on('click', close_menu);
+
+        if ($target.hasClass('clstMenu-open')) {
+            // hide menu when user clicks the trigger and the menu is already visible
+            close_menu();
+        } else {
+            var target_position = $target.offset();
+            var x = target_position.left;
+            var y = target_position.top + $target.height();
+            $menu.css({top: y, left: x}).show();
+            $target.addClass('clstMenu-open');
+            $target.parent().addClass('menu-open');
+        }
     }
 };
 
@@ -428,7 +427,7 @@ var add_styles = function() {
     GM_addStyle('.calListRow.calListRow-hover .clstMenu { display: inline-block; }');
     GM_addStyle('.calListRow .clstMenu.clstMenu-open { display: inline-block; }');
     GM_addStyle('.calListRow.menu-open .calListLabelOuter { background-color: #eee; }');
-    GM_addStyle('.views-menu-separator { border-top: 1px solid #ebebeb; margin: 5px 0; }');
+    GM_addStyle('.menu-separator { border-top: 1px solid #ebebeb; margin: 5px 0; }');
 };
 
 // String Helpers
