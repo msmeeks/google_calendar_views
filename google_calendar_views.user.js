@@ -127,6 +127,10 @@ MenuHelper = {
         return $item;
     },
 
+    make_menu_seperator: function() {
+        return $('<div class="views-menu-separator">');
+    },
+
     make_menu: function(cfg) {
         var defaults = {
             triggerTarget: null,
@@ -138,7 +142,11 @@ MenuHelper = {
         cfg = $.extend({}, defaults, cfg);
 
         var $items = $.map(cfg.items, function(item_cfg) {
-            return MenuHelper.make_menu_item(item_cfg);
+            if (item_cfg == '-') {
+                return MenuHelper.make_menu_seperator();
+            } else {
+                return MenuHelper.make_menu_item(item_cfg);
+            }
         });
 
         var $menu = $('<div class="goog-menu goog-menu-vertical" role="menu" aria-haspopup="true" tabindex="0" style="user-select: none;">')
@@ -376,6 +384,7 @@ function make_view_option(view) {
                         ViewHelper.hide_view_calendars(view.name);
                     }
                 },
+                '-',
                 {
                     text: 'Update View',
                     onClick: function() {
@@ -419,6 +428,7 @@ var add_styles = function() {
     GM_addStyle('.calListRow.calListRow-hover .clstMenu { display: inline-block; }');
     GM_addStyle('.calListRow .clstMenu.clstMenu-open { display: inline-block; }');
     GM_addStyle('.calListRow.menu-open .calListLabelOuter { background-color: #eee; }');
+    GM_addStyle('.views-menu-separator { border-top: 1px solid #ebebeb; margin: 5px 0; }');
 };
 
 // String Helpers
