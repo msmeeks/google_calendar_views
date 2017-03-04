@@ -1,0 +1,20 @@
+.calListRow .clstMenu {
+    display: none; margin-top: -2px;
+}
+
+.calListRow.calListRow-hover .clstMenu {
+    display: inline-block;
+}
+
+.calListRow .clstMenu.clstMenu-open {
+    display: inline-block;
+}
+
+.calListRow.menu-open .calListLabelOuter {
+    background-color: #eee;
+}
+
+.menu-separator {
+    border-top: 1px solid #ebebeb; margin: 5px 0;
+}
+
