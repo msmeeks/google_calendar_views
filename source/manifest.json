@@ -16,7 +16,7 @@
       "js": [
         "jquery-3.1.1.min.js",
         "super_local_storage.js",
-        "google_calendar_views.user.js"
+        "google_calendar_views.js"
       ]
     }
   ]
