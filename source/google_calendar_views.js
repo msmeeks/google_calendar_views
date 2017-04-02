@@ -3,6 +3,7 @@
  - Include the view type as part of the view (e.g. day, week, month, etc.)
  - Require confirmation to delete a view
  - Make views list share height like the calendar lists (no scrolling of the side bar when all are expanded)
+ - Undo/Redo changes to the view
 */
 
 var run = function() {
@@ -54,7 +55,12 @@ CalendarHelper = {
                 $calendar.click();
             }
         }
-    }
+    },
+
+	show_only_specified_calendars: function(calendars) {
+		CalendarHelper.hide_all_calendars(calendars);
+		CalendarHelper.set_visibility_for_calendars(calendars);
+	}
 };
 
 MenuHelper = {
@@ -221,18 +227,24 @@ ViewHelper = {
 
     activate_view: function(name) {
         var view = ViewHelper.get_view(name);
-        CalendarHelper.hide_all_calendars(view.calendars);
-        ViewHelper.show_view_calendars(view.name);
+		StateHelper.record_current_state();
+
+        CalendarHelper.show_only_specified_calendars(view.calendars);
+        ViewHelper.mark_view_used(view.name);
     },
 
     show_view_calendars: function(name) {
         var view = ViewHelper.get_view(name);
+		StateHelper.record_current_state();
+
         CalendarHelper.set_visibility_for_calendars(view.calendars, true);
         ViewHelper.mark_view_used(view.name);
     },
 
     hide_view_calendars: function(name) {
         var view = ViewHelper.get_view(name);
+		StateHelper.record_current_state();
+
         CalendarHelper.set_visibility_for_calendars(view.calendars, false);
     },
 
@@ -244,6 +256,44 @@ ViewHelper = {
         setValue('views', views);
     }
 };
+
+StateHelper = {
+	states: [],
+	index: -1,
+
+	record_current_state: function() {
+		var current_calendars = CalendarHelper.get_visible_calendars();
+		var current_state = {
+			name: new Date(),
+			calendars: current_calendars
+		};
+
+		// Truncate states if some states have been undone before recording the current state
+		if (StateHelper.index + 1 < StateHelper.states.length) {
+			StateHelper.states = StateHelper.states.slice(StateHelper.index + 1);
+		}
+
+		StateHelper.states.push(current_state);
+		StateHelper.index++;
+	},
+
+	set_state: function(index) {
+		if (index <= 0 || index > StateHelper.states.length - 1) {
+			return false;
+		}
+
+		StateHelper.index = index;
+        CalendarHelper.show_only_specified_calendars(StateHelper.states[index].calendars);
+	},
+
+	undo: function() {
+		StateHelper.set_state(StateHelper.index - 1);
+	},
+
+	redo: function() {
+		StateHelper.set_state(StateHelper.index + 1);
+	}
+}
 
 function make_create_view_form() {
     var $name = $('<input type="text" style="width:100px; margin:0 10px;" placeholder="Name"/>');
@@ -285,10 +335,20 @@ function make_views_panel() {
     var $menu_trigger = MenuHelper.make_menu_trigger({
         isVisible: true,
         menu: {
-            items: [{
-                text: 'Create View',
-                onClick: show_create_view_form
-            }]
+            items: [
+				{
+					text: 'Undo',
+					onClick: StateHelper.undo
+				},
+				{
+					text: 'Redo',
+					onClick: StateHelper.redo
+				},
+				{
+					text: 'Create View',
+					onClick: show_create_view_form
+				}
+			]
         }
     });
 
