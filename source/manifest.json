@@ -3,7 +3,16 @@
 
   "name": "Google Calendar Views",
   "description": "Add support to manage views (lists of calendars and display type) to Google Calendar",
-  "version": "0.1",
+  "version": "0.1.2",
+
+  "icons": {
+    "16": "logos/google_calendar_views_logo_16.png",
+    "32": "logos/google_calendar_views_logo_32.png",
+    "48": "logos/google_calendar_views_logo_48.png",
+    "64": "logos/google_calendar_views_logo_64.png",
+    "128": "logos/google_calendar_views_logo_128.png",
+    "256": "logos/google_calendar_views_logo_256.png"
+  },
 
   "content_scripts": [
     {
