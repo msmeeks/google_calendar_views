@@ -18,3 +18,8 @@
     border-top: 1px solid #ebebeb; margin: 5px 0;
 }
 
+.__view_container__ a.disabled,
+.goog-menuitem.disabled {
+	color: gray;
+	cursor: not-allowed;
+}

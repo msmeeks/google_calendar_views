@@ -260,6 +260,7 @@ ViewHelper = {
 StateHelper = {
 	states: [],
 	index: -1,
+	stateChangeListeners: [],
 
 	record_current_state: function() {
 		var current_calendars = CalendarHelper.get_visible_calendars();
@@ -275,24 +276,44 @@ StateHelper = {
 
 		StateHelper.states.push(current_state);
 		StateHelper.index++;
+
+		StateHelper.fire_change_event();
 	},
 
 	set_state: function(index) {
-		if (index <= 0 || index > StateHelper.states.length - 1) {
+		if (index < 0 || index > StateHelper.states.length - 1) {
 			return false;
 		}
 
-		StateHelper.index = index;
         CalendarHelper.show_only_specified_calendars(StateHelper.states[index].calendars);
+		StateHelper.index = index;
+
+		StateHelper.fire_change_event();
+
+		return true;
 	},
 
 	undo: function() {
 		StateHelper.set_state(StateHelper.index - 1);
 	},
 
+	can_undo: function() {
+		return StateHelper.index > 0;
+	},
+
 	redo: function() {
 		StateHelper.set_state(StateHelper.index + 1);
-	}
+	},
+
+	can_redo: function() {
+		return StateHelper.index < StateHelper.states.length - 1;
+	},
+
+	fire_change_event: function() {
+		//TODO: Fix this...
+	//	$(StateHelper).triggerHnalder('change');
+	},
+
 }
 
 function make_create_view_form() {
@@ -301,7 +322,12 @@ function make_create_view_form() {
     var $cancel_btn = $('<a href="#" style="float:left;">Cancel</a>');
     var $form = $('<div class="create-view-form" style="display:none; padding:5px 0;">New View:</div>');
 
-    $form.append($name).append($cancel_btn).append($save_btn).append('<div style="clear:both">');
+    $form.append(
+		$name,
+		$cancel_btn,
+		$save_btn,
+		'<div style="clear:both">'
+	);
 
     $cancel_btn.on('click', function() {
         $form.hide();
@@ -329,21 +355,54 @@ function show_create_view_form() {
     $form.show();
 }
 
+function make_view_activity_bar() {
+	var $undo_btn = $('<a href="#" class="disabled" style="float:left;">Undo</a>')
+		.on('click', function() {
+			if (!$(this).hasClass('disabled')) {
+				StateHelper.undo();
+			}
+		});
+
+	var $redo_btn = $('<a href="#" class="disabled" style="float:right;">Redo</a>')
+		.on('click', function() {
+			if (!$(this).hasClass('disabled')) {
+				StateHelper.redo();
+			}
+		});
+
+	$(StateHelper).on('change', function() {
+		$undo_btn.toggleClass('disabled', !StateHelper.can_undo());
+		$redo_btn.toggleClass('disabled', !StateHelper.can_redo());
+	});
+
+	return $('<div>').append(
+		$undo_btn,
+		$redo_btn,
+		'<div style="clear:both">'
+	);
+};
+
 function make_views_panel() {
+	var $view_activity_bar = make_view_activity_bar();
+
     var $new_view_form = make_create_view_form();
+
+	var $undo_opt = MenuHelper.make_menu_item({
+		text: 'Undo',
+		onClick: StateHelper.undo
+	}).addClass('disabled');
+
+	var $redo_opt = MenuHelper.make_menu_item({
+		text: 'Redo',
+		onClick: StateHelper.redo
+	}).addClass('disabled');
 
     var $menu_trigger = MenuHelper.make_menu_trigger({
         isVisible: true,
         menu: {
             items: [
-				{
-					text: 'Undo',
-					onClick: StateHelper.undo
-				},
-				{
-					text: 'Redo',
-					onClick: StateHelper.redo
-				},
+				//$undo_opt,
+				//$redo_opt,
 				{
 					text: 'Create View',
 					onClick: show_create_view_form
@@ -351,6 +410,11 @@ function make_views_panel() {
 			]
         }
     });
+	// FIXME, these items don't work anymore...
+	$(StateHelper).on('change', function() {
+		$undo_opt.toggleClass('disabled', !StateHelper.can_undo());
+		$redo_opt.toggleClass('disabled', !StateHelper.can_redo());
+	});
 
     var view_list_is_visible = getValue('view_list_is_visible', false);
     var expander_class = 'goog-zippy-collapsed';
@@ -374,7 +438,12 @@ function make_views_panel() {
 
     var $views_list = $('<div id="__view_list__">').css('display', list_display_style);
 
-    var $views_panel = $('<div>').append($views_header).append($new_view_form).append($views_list);
+    var $views_panel = $('<div class="__view_container__">').append(
+		$views_header,
+		$view_activity_bar,
+		$new_view_form,
+		$views_list
+	);
     return $views_panel;
 }
 
